@@ -1,0 +1,6 @@
+{
+  "name": "MSR BD Game Top-Up",
+  "description": "Digital gaming top-up and subscription store for Bangladesh featuring Roblox Robux, subscriptions, loyalty points, and owner dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

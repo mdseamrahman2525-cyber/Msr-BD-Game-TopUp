@@ -1,0 +1,511 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny global catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- GLOBAL SECURITY PRIMITIVES ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Server-side verified owner check: requires verified Google ID token email (case-insensitive) or trusted /admins/{uid} record
+    function isOwnerAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email is string &&
+         request.auth.token.email.lower() == 'mdseamrahman2525@gmail.com' &&
+         request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // --- VALIDATION BLUEPRINTS ---
+    function isValidStoreConfig(data) {
+      return data.bkashNumber is string && data.bkashNumber.size() >= 5 && data.bkashNumber.size() <= 30 &&
+             (!('nagadNumber' in data) || (data.nagadNumber is string && data.nagadNumber.size() >= 5 && data.nagadNumber.size() <= 30)) &&
+             data.paymentInstructions is string && data.paymentInstructions.size() <= 1000 &&
+             data.supportPhone is string && data.supportPhone.size() >= 5 && data.supportPhone.size() <= 30 &&
+             data.whatsappCommunityUrl is string && data.whatsappCommunityUrl.size() <= 500 &&
+             data.supportInfo is string && data.supportInfo.size() <= 1000 &&
+             data.maintenanceMode is bool &&
+             data.maintenanceMessage is string && data.maintenanceMessage.size() <= 500 &&
+             data.announcementBanner is string && data.announcementBanner.size() <= 500 &&
+             data.silverThreshold is int && data.silverThreshold >= 0 && data.silverThreshold <= 10000000 &&
+             data.goldThreshold is int && data.goldThreshold >= 0 && data.goldThreshold <= 10000000 &&
+             data.platinumThreshold is int && data.platinumThreshold >= 0 && data.platinumThreshold <= 10000000 &&
+             data.rewardDescription is string && data.rewardDescription.size() <= 1000 &&
+             data.privacyPolicyText is string && data.privacyPolicyText.size() <= 4000 &&
+             data.termsText is string && data.termsText.size() <= 4000 &&
+             (!('appDownloadUrl' in data) || (data.appDownloadUrl is string && data.appDownloadUrl.size() <= 500)) &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidGame(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.slug is string && data.slug.size() >= 1 && data.slug.size() <= 80 &&
+             data.description is string && data.description.size() <= 500 &&
+             data.imageUrl is string && data.imageUrl.size() <= 1000 &&
+             data.themeColorHex is string && data.themeColorHex.size() <= 16 &&
+             data.active is bool &&
+             data.featured is bool &&
+             data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 10000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidCategory(data) {
+      return data.gameId is string && data.gameId.size() >= 1 && data.gameId.size() <= 128 &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.description is string && data.description.size() <= 400 &&
+             data.type in ['CURRENCY', 'SUBSCRIPTION', 'GRAB', 'OTHER'] &&
+             data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 10000 &&
+             data.active is bool &&
+             data.requiredInputFields is list && data.requiredInputFields.size() <= 6 &&
+             (data.requiredInputFields.size() == 0 || data.requiredInputFields[0] is string) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidProduct(data) {
+      return data.gameId is string && data.gameId.size() >= 1 && data.gameId.size() <= 128 &&
+             data.categoryId is string && data.categoryId.size() >= 1 && data.categoryId.size() <= 128 &&
+             data.categoryType in ['CURRENCY', 'SUBSCRIPTION', 'GRAB', 'OTHER'] &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.subtitle is string && data.subtitle.size() <= 150 &&
+             data.description is string && data.description.size() <= 600 &&
+             data.quantityLabel is string && data.quantityLabel.size() >= 1 && data.quantityLabel.size() <= 60 &&
+             data.amountValue is int && data.amountValue >= 0 && data.amountValue <= 10000000 &&
+             data.priceBdt is int && data.priceBdt >= 1 && data.priceBdt <= 10000000 &&
+             data.imageUrl is string && data.imageUrl.size() <= 1000 &&
+             data.available is bool &&
+             data.active is bool &&
+             data.featured is bool &&
+             data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 10000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidBonusOffer(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.description is string && data.description.size() <= 600 &&
+             data.productId is string && data.productId.size() <= 128 &&
+             data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 100 &&
+             data.imageUrl is string && data.imageUrl.size() <= 1000 &&
+             data.originalPriceBdt is int && data.originalPriceBdt >= 1 && data.originalPriceBdt <= 10000000 &&
+             data.discountedPriceBdt is int && data.discountedPriceBdt >= 1 && data.discountedPriceBdt <= 10000000 &&
+             data.dropDayOfMonth is int && data.dropDayOfMonth in [10, 20, 30] &&
+             data.startDate is timestamp &&
+             data.endDate is timestamp &&
+             data.active is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFaq(data) {
+      return data.question is string && data.question.size() >= 3 && data.question.size() <= 300 &&
+             data.answer is string && data.answer.size() >= 3 && data.answer.size() <= 1500 &&
+             data.displayOrder is int && data.displayOrder >= 0 && data.displayOrder <= 1000 &&
+             data.active is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAnnouncement(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.message is string && data.message.size() >= 1 && data.message.size() <= 1000 &&
+             data.active is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidUser(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.photoUrl is string && data.photoUrl.size() <= 1000 &&
+             data.points is int && data.points >= 0 && data.points <= 100000000 &&
+             data.totalVerifiedSpending is int && data.totalVerifiedSpending >= 0 && data.totalVerifiedSpending <= 100000000 &&
+             data.membershipTier in ['STANDARD', 'SILVER', 'GOLD', 'PLATINUM'] &&
+             data.role in ['customer', 'owner'] &&
+             data.favoriteProductIds is list && data.favoriteProductIds.size() <= 50 &&
+             (data.favoriteProductIds.size() == 0 || data.favoriteProductIds[0] is string) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidPointsEntry(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.orderId is string && data.orderId.size() <= 128 &&
+             data.pointsDelta is int && data.pointsDelta >= -10000000 && data.pointsDelta <= 10000000 &&
+             data.amountBdt is int && data.amountBdt >= 0 && data.amountBdt <= 10000000 &&
+             data.reason is string && data.reason.size() >= 1 && data.reason.size() <= 200 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidNotification(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.message is string && data.message.size() >= 1 && data.message.size() <= 500 &&
+             data.type in ['ORDER', 'OFFER', 'ANNOUNCEMENT'] &&
+             data.relatedOrderId is string && data.relatedOrderId.size() <= 128 &&
+             data.read is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidOrder(data) {
+      return data.orderCode is string && data.orderCode.size() >= 4 && data.orderCode.size() <= 40 &&
+             data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.customerName is string && data.customerName.size() <= 100 &&
+             data.customerEmail is string && data.customerEmail.size() <= 200 &&
+             data.gameId is string && data.gameId.size() >= 1 && data.gameId.size() <= 128 &&
+             data.gameName is string && data.gameName.size() >= 1 && data.gameName.size() <= 80 &&
+             data.categoryName is string && data.categoryName.size() >= 1 && data.categoryName.size() <= 80 &&
+             data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 128 &&
+             data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 100 &&
+             data.quantityLabel is string && data.quantityLabel.size() >= 1 && data.quantityLabel.size() <= 60 &&
+             data.unitPriceBdt is int && data.unitPriceBdt >= 1 && data.unitPriceBdt <= 10000000 &&
+             data.totalAmountBdt is int && data.totalAmountBdt >= 1 && data.totalAmountBdt <= 10000000 &&
+             data.unitPriceBdt == data.totalAmountBdt &&
+             data.targetAccountLabel is string && data.targetAccountLabel.size() >= 1 && data.targetAccountLabel.size() <= 60 &&
+             data.targetAccountInput is string && data.targetAccountInput.size() >= 2 && data.targetAccountInput.size() <= 120 &&
+             data.paymentMethod in ['bKash', 'Nagad'] &&
+             data.paymentRecipientNumber is string && data.paymentRecipientNumber.size() >= 5 && data.paymentRecipientNumber.size() <= 30 &&
+             data.paymentSenderNumber is string && data.paymentSenderNumber.size() >= 5 && data.paymentSenderNumber.size() <= 30 &&
+             data.transactionId is string && data.transactionId.size() >= 3 && data.transactionId.size() <= 60 &&
+             data.paymentConfirmed is bool &&
+             data.status in ['PENDING', 'PAYMENT_VERIFICATION', 'PROCESSING', 'COMPLETED', 'REJECTED'] &&
+             data.adminNote is string && data.adminNote.size() <= 500 &&
+             data.pointsAwarded is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidOwnerOrderMessage(data) {
+      return data.orderId is string && data.orderId.size() >= 1 && data.orderId.size() <= 128 &&
+             data.orderCode is string && data.orderCode.size() >= 4 && data.orderCode.size() <= 40 &&
+             data.customerUid is string && data.customerUid.size() >= 1 && data.customerUid.size() <= 128 &&
+             data.customerName is string && data.customerName.size() <= 100 &&
+             data.customerEmail is string && data.customerEmail.size() <= 200 &&
+             data.gameName is string && data.gameName.size() >= 1 && data.gameName.size() <= 80 &&
+             data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 100 &&
+             data.totalAmountBdt is int && data.totalAmountBdt >= 1 && data.totalAmountBdt <= 10000000 &&
+             data.targetAccountLabel is string && data.targetAccountLabel.size() >= 1 && data.targetAccountLabel.size() <= 60 &&
+             data.targetAccountInput is string && data.targetAccountInput.size() >= 2 && data.targetAccountInput.size() <= 120 &&
+             (!('paymentMethod' in data) || data.paymentMethod in ['bKash', 'Nagad']) &&
+             data.paymentSenderNumber is string && data.paymentSenderNumber.size() >= 5 && data.paymentSenderNumber.size() <= 30 &&
+             data.transactionId is string && data.transactionId.size() >= 3 && data.transactionId.size() <= 60 &&
+             data.read is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    // --- COLLECTION RULES ---
+
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && request.auth.uid == adminId;
+      allow list, create, update, delete: if false;
+    }
+
+    match /app_settings/{settingId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isOwnerAdmin() &&
+                               isValidId(settingId) &&
+                               isValidStoreConfig(incoming()) &&
+                               incoming().keys().hasAll([
+                                 'bkashNumber', 'paymentInstructions', 'supportPhone', 'whatsappCommunityUrl',
+                                 'supportInfo', 'maintenanceMode', 'maintenanceMessage', 'announcementBanner',
+                                 'silverThreshold', 'goldThreshold', 'platinumThreshold', 'rewardDescription',
+                                 'privacyPolicyText', 'termsText', 'updatedAt'
+                               ]) &&
+                               incoming().keys().hasOnly([
+                                 'bkashNumber', 'nagadNumber', 'paymentInstructions', 'supportPhone', 'whatsappCommunityUrl',
+                                 'supportInfo', 'maintenanceMode', 'maintenanceMessage', 'announcementBanner',
+                                 'silverThreshold', 'goldThreshold', 'platinumThreshold', 'rewardDescription',
+                                 'privacyPolicyText', 'termsText', 'appDownloadUrl', 'updatedAt'
+                               ]);
+      allow delete: if false;
+    }
+
+    match /games/{gameId} {
+      allow get: if isSignedIn() && isValidId(gameId) && (existing().active == true || isOwnerAdmin());
+      allow list: if isSignedIn() && (existing().active == true || isOwnerAdmin());
+      allow create: if isOwnerAdmin() &&
+                       isValidId(gameId) &&
+                       isValidGame(incoming()) &&
+                       incoming().keys().hasAll(['name', 'slug', 'description', 'imageUrl', 'themeColorHex', 'active', 'featured', 'displayOrder', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['name', 'slug', 'description', 'imageUrl', 'themeColorHex', 'active', 'featured', 'displayOrder', 'createdAt', 'updatedAt']);
+      allow update: if isOwnerAdmin() &&
+                       isValidId(gameId) &&
+                       isValidGame(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'slug', 'description', 'imageUrl', 'themeColorHex', 'active', 'featured', 'displayOrder', 'updatedAt']);
+      allow delete: if isOwnerAdmin() && isValidId(gameId);
+    }
+
+    match /categories/{categoryId} {
+      allow get: if isSignedIn() && isValidId(categoryId) && (existing().active == true || isOwnerAdmin());
+      allow list: if isSignedIn() && (existing().active == true || isOwnerAdmin());
+      allow create: if isOwnerAdmin() &&
+                       isValidId(categoryId) &&
+                       isValidCategory(incoming()) &&
+                       incoming().keys().hasAll(['gameId', 'name', 'description', 'type', 'displayOrder', 'active', 'requiredInputFields', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['gameId', 'name', 'description', 'type', 'displayOrder', 'active', 'requiredInputFields', 'createdAt', 'updatedAt']);
+      allow update: if isOwnerAdmin() &&
+                       isValidId(categoryId) &&
+                       isValidCategory(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['gameId', 'name', 'description', 'type', 'displayOrder', 'active', 'requiredInputFields', 'updatedAt']);
+      allow delete: if isOwnerAdmin() && isValidId(categoryId);
+    }
+
+    match /products/{productId} {
+      allow get: if isSignedIn() && isValidId(productId) && (existing().active == true || isOwnerAdmin());
+      allow list: if isSignedIn() && (existing().active == true || isOwnerAdmin());
+      allow create: if isOwnerAdmin() &&
+                       isValidId(productId) &&
+                       isValidProduct(incoming()) &&
+                       incoming().keys().hasAll([
+                         'gameId', 'categoryId', 'categoryType', 'name', 'subtitle', 'description',
+                         'quantityLabel', 'amountValue', 'priceBdt', 'imageUrl', 'available',
+                         'active', 'featured', 'displayOrder', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'gameId', 'categoryId', 'categoryType', 'name', 'subtitle', 'description',
+                         'quantityLabel', 'amountValue', 'priceBdt', 'imageUrl', 'available',
+                         'active', 'featured', 'displayOrder', 'createdAt', 'updatedAt'
+                       ]);
+      allow update: if isOwnerAdmin() &&
+                       isValidId(productId) &&
+                       isValidProduct(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'gameId', 'categoryId', 'categoryType', 'name', 'subtitle', 'description',
+                         'quantityLabel', 'amountValue', 'priceBdt', 'imageUrl', 'available',
+                         'active', 'featured', 'displayOrder', 'updatedAt'
+                       ]);
+      allow delete: if isOwnerAdmin() && isValidId(productId);
+    }
+
+    match /bonus_offers/{offerId} {
+      allow get: if isSignedIn() && isValidId(offerId) && (existing().active == true || isOwnerAdmin());
+      allow list: if isSignedIn() && (existing().active == true || isOwnerAdmin());
+      allow create: if isOwnerAdmin() &&
+                       isValidId(offerId) &&
+                       isValidBonusOffer(incoming()) &&
+                       incoming().keys().hasAll([
+                         'title', 'description', 'productId', 'productName', 'imageUrl',
+                         'originalPriceBdt', 'discountedPriceBdt', 'dropDayOfMonth',
+                         'startDate', 'endDate', 'active', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'title', 'description', 'productId', 'productName', 'imageUrl',
+                         'originalPriceBdt', 'discountedPriceBdt', 'dropDayOfMonth',
+                         'startDate', 'endDate', 'active', 'createdAt', 'updatedAt'
+                       ]);
+      allow update: if isOwnerAdmin() &&
+                       isValidId(offerId) &&
+                       isValidBonusOffer(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'title', 'description', 'productId', 'productName', 'imageUrl',
+                         'originalPriceBdt', 'discountedPriceBdt', 'dropDayOfMonth',
+                         'startDate', 'endDate', 'active', 'updatedAt'
+                       ]);
+      allow delete: if isOwnerAdmin() && isValidId(offerId);
+    }
+
+    match /faqs/{faqId} {
+      allow get: if isSignedIn() && isValidId(faqId) && (existing().active == true || isOwnerAdmin());
+      allow list: if isSignedIn() && (existing().active == true || isOwnerAdmin());
+      allow create: if isOwnerAdmin() &&
+                       isValidId(faqId) &&
+                       isValidFaq(incoming()) &&
+                       incoming().keys().hasAll(['question', 'answer', 'displayOrder', 'active', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['question', 'answer', 'displayOrder', 'active', 'createdAt', 'updatedAt']);
+      allow update: if isOwnerAdmin() &&
+                       isValidId(faqId) &&
+                       isValidFaq(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['question', 'answer', 'displayOrder', 'active', 'updatedAt']);
+      allow delete: if isOwnerAdmin() && isValidId(faqId);
+    }
+
+    match /announcements/{announcementId} {
+      allow get: if isSignedIn() && isValidId(announcementId) && (existing().active == true || isOwnerAdmin());
+      allow list: if isSignedIn() && (existing().active == true || isOwnerAdmin());
+      allow create: if isOwnerAdmin() &&
+                       isValidId(announcementId) &&
+                       isValidAnnouncement(incoming()) &&
+                       incoming().keys().hasAll(['title', 'message', 'active', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['title', 'message', 'active', 'createdAt', 'updatedAt']);
+      allow update: if isOwnerAdmin() &&
+                       isValidId(announcementId) &&
+                       isValidAnnouncement(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'message', 'active', 'updatedAt']);
+      allow delete: if isOwnerAdmin() && isValidId(announcementId);
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isOwnerAdmin());
+      allow list: if isOwnerAdmin();
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == userId &&
+                       incoming().points == 0 &&
+                       incoming().totalVerifiedSpending == 0 &&
+                       incoming().membershipTier == 'STANDARD' &&
+                       incoming().role == 'customer' &&
+                       isValidUser(incoming()) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'email', 'photoUrl', 'points',
+                         'totalVerifiedSpending', 'membershipTier', 'role', 'favoriteProductIds',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'email', 'photoUrl', 'points',
+                         'totalVerifiedSpending', 'membershipTier', 'role', 'favoriteProductIds',
+                         'createdAt', 'updatedAt'
+                       ]);
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       isValidUser(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (
+                           request.auth.uid == userId &&
+                           incoming().points == existing().points &&
+                           incoming().totalVerifiedSpending == existing().totalVerifiedSpending &&
+                           incoming().membershipTier == existing().membershipTier &&
+                           incoming().role == existing().role &&
+                           incoming().email == existing().email &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoUrl', 'favoriteProductIds', 'updatedAt'])
+                         ) ||
+                         (
+                           isOwnerAdmin() &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['points', 'totalVerifiedSpending', 'membershipTier', 'role', 'updatedAt'])
+                         )
+                       );
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+      match /points_history/{entryId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(entryId) && (request.auth.uid == userId || isOwnerAdmin());
+        allow list: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isOwnerAdmin());
+        allow create: if isOwnerAdmin() &&
+                         isValidId(userId) &&
+                         isValidId(entryId) &&
+                         isValidPointsEntry(incoming()) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'orderId', 'pointsDelta', 'amountBdt', 'reason', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'orderId', 'pointsDelta', 'amountBdt', 'reason', 'createdAt']);
+        allow update, delete: if false;
+      }
+
+      match /notifications/{notificationId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(notificationId) && (request.auth.uid == userId || isOwnerAdmin());
+        allow list: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isOwnerAdmin());
+        allow create: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(notificationId) &&
+                         isValidNotification(incoming()) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'title', 'message', 'type', 'relatedOrderId', 'read', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'message', 'type', 'relatedOrderId', 'read', 'createdAt']) &&
+                         (isOwnerAdmin() || (request.auth.uid == userId && incoming().type == 'ORDER' && incoming().read == false));
+        allow update: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(notificationId) &&
+                         isValidNotification(incoming()) &&
+                         request.auth.uid == userId &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+        allow delete: if isSignedIn() && isValidId(userId) && isValidId(notificationId) && (request.auth.uid == userId || isOwnerAdmin());
+      }
+    }
+
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && isValidId(orderId) && (existing().userId == request.auth.uid || isOwnerAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isOwnerAdmin());
+      allow create: if isSignedIn() &&
+                       isValidId(orderId) &&
+                       isValidOrder(incoming()) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().status == 'PENDING' &&
+                       incoming().pointsAwarded == false &&
+                       incoming().paymentConfirmed == true &&
+                       incoming().adminNote == '' &&
+                       (!exists(/databases/$(database)/documents/products/$(incoming().productId)) ||
+                         (get(/databases/$(database)/documents/products/$(incoming().productId)).data.active == true &&
+                          get(/databases/$(database)/documents/products/$(incoming().productId)).data.available == true)) &&
+                       incoming().keys().hasAll([
+                         'orderCode', 'userId', 'customerName', 'customerEmail', 'gameId', 'gameName',
+                         'categoryName', 'productId', 'productName', 'quantityLabel', 'unitPriceBdt',
+                         'totalAmountBdt', 'targetAccountLabel', 'targetAccountInput', 'paymentMethod',
+                         'paymentRecipientNumber', 'paymentSenderNumber', 'transactionId', 'paymentConfirmed',
+                         'status', 'adminNote', 'pointsAwarded', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'orderCode', 'userId', 'customerName', 'customerEmail', 'gameId', 'gameName',
+                         'categoryName', 'productId', 'productName', 'quantityLabel', 'unitPriceBdt',
+                         'totalAmountBdt', 'targetAccountLabel', 'targetAccountInput', 'paymentMethod',
+                         'paymentRecipientNumber', 'paymentSenderNumber', 'transactionId', 'paymentConfirmed',
+                         'status', 'adminNote', 'pointsAwarded', 'createdAt', 'updatedAt'
+                       ]);
+      allow update: if isOwnerAdmin() &&
+                       isValidId(orderId) &&
+                       isValidOrder(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().orderCode == existing().orderCode &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status', 'adminNote', 'pointsAwarded', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // Owner-only real-time incoming order message inbox (paired atomically with customer order creation)
+    match /owner_order_messages/{messageId} {
+      allow get, list: if isOwnerAdmin();
+      allow create: if isSignedIn() &&
+                       isValidId(messageId) &&
+                       isValidOwnerOrderMessage(incoming()) &&
+                       incoming().customerUid == request.auth.uid &&
+                       incoming().orderId == messageId &&
+                       incoming().read == false &&
+                       existsAfter(/databases/$(database)/documents/orders/$(messageId)) &&
+                       incoming().keys().hasAll([
+                         'orderId', 'orderCode', 'customerUid', 'customerName', 'customerEmail',
+                         'gameName', 'productName', 'totalAmountBdt', 'targetAccountLabel',
+                         'targetAccountInput', 'paymentSenderNumber', 'transactionId', 'read', 'createdAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'orderId', 'orderCode', 'customerUid', 'customerName', 'customerEmail',
+                         'gameName', 'productName', 'totalAmountBdt', 'targetAccountLabel',
+                         'targetAccountInput', 'paymentMethod', 'paymentSenderNumber', 'transactionId', 'read', 'createdAt'
+                       ]);
+      allow update: if isOwnerAdmin() &&
+                       isValidId(messageId) &&
+                       isValidOwnerOrderMessage(incoming()) &&
+                       incoming().orderId == existing().orderId &&
+                       incoming().customerUid == existing().customerUid &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+      allow delete: if isOwnerAdmin() && isValidId(messageId);
+    }
+  }
+}

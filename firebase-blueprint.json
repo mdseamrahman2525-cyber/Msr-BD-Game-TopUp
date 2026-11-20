@@ -1,0 +1,328 @@
+{
+  "entities": {
+    "StoreConfig": {
+      "title": "StoreConfig",
+      "description": "Global store configuration, payment details, support info, loyalty thresholds, and maintenance settings.",
+      "type": "object",
+      "properties": {
+        "bkashNumber": { "type": "string" },
+        "nagadNumber": { "type": "string" },
+        "paymentInstructions": { "type": "string" },
+        "supportPhone": { "type": "string" },
+        "whatsappCommunityUrl": { "type": "string" },
+        "supportInfo": { "type": "string" },
+        "maintenanceMode": { "type": "boolean" },
+        "maintenanceMessage": { "type": "string" },
+        "announcementBanner": { "type": "string" },
+        "silverThreshold": { "type": "integer" },
+        "goldThreshold": { "type": "integer" },
+        "platinumThreshold": { "type": "integer" },
+        "rewardDescription": { "type": "string" },
+        "privacyPolicyText": { "type": "string" },
+        "termsText": { "type": "string" },
+        "appDownloadUrl": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Must be FieldValue.serverTimestamp()" }
+      },
+      "required": [
+        "bkashNumber", "paymentInstructions", "supportPhone", "whatsappCommunityUrl",
+        "supportInfo", "maintenanceMode", "maintenanceMessage", "announcementBanner",
+        "silverThreshold", "goldThreshold", "platinumThreshold", "rewardDescription",
+        "privacyPolicyText", "termsText", "updatedAt"
+      ]
+    },
+    "Game": {
+      "title": "Game",
+      "description": "A digital game or service storefront (Roblox at launch, expandable by owner).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "themeColorHex": { "type": "string" },
+        "active": { "type": "boolean" },
+        "featured": { "type": "boolean" },
+        "displayOrder": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "slug", "description", "imageUrl", "themeColorHex", "active", "featured", "displayOrder", "createdAt", "updatedAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category under a game with configurable customer input fields.",
+      "type": "object",
+      "properties": {
+        "gameId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["CURRENCY", "SUBSCRIPTION", "GRAB", "OTHER"] },
+        "displayOrder": { "type": "integer" },
+        "active": { "type": "boolean" },
+        "requiredInputFields": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["gameId", "name", "description", "type", "displayOrder", "active", "requiredInputFields", "createdAt", "updatedAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Top-up package or subscription item.",
+      "type": "object",
+      "properties": {
+        "gameId": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "categoryType": { "type": "string", "enum": ["CURRENCY", "SUBSCRIPTION", "GRAB", "OTHER"] },
+        "name": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "description": { "type": "string" },
+        "quantityLabel": { "type": "string" },
+        "amountValue": { "type": "integer" },
+        "priceBdt": { "type": "integer" },
+        "imageUrl": { "type": "string" },
+        "available": { "type": "boolean" },
+        "active": { "type": "boolean" },
+        "featured": { "type": "boolean" },
+        "displayOrder": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "gameId", "categoryId", "categoryType", "name", "subtitle", "description",
+        "quantityLabel", "amountValue", "priceBdt", "imageUrl", "available",
+        "active", "featured", "displayOrder", "createdAt", "updatedAt"
+      ]
+    },
+    "BonusOffer": {
+      "title": "BonusOffer",
+      "description": "Owner-published Exclusive Bonus Drop offer for 10th, 20th, or 30th of the month.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "originalPriceBdt": { "type": "integer" },
+        "discountedPriceBdt": { "type": "integer" },
+        "dropDayOfMonth": { "type": "integer" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "title", "description", "productId", "productName", "imageUrl",
+        "originalPriceBdt", "discountedPriceBdt", "dropDayOfMonth",
+        "startDate", "endDate", "active", "createdAt", "updatedAt"
+      ]
+    },
+    "FaqItem": {
+      "title": "FaqItem",
+      "description": "Customer support FAQ entry.",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "answer": { "type": "string" },
+        "displayOrder": { "type": "integer" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["question", "answer", "displayOrder", "active", "createdAt", "updatedAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Storewide announcement published by the owner.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "message", "active", "createdAt", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Customer account, loyalty points, total verified spending, and membership tier.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "points": { "type": "integer" },
+        "totalVerifiedSpending": { "type": "integer" },
+        "membershipTier": { "type": "string", "enum": ["STANDARD", "SILVER", "GOLD", "PLATINUM"] },
+        "role": { "type": "string", "enum": ["customer", "owner"] },
+        "favoriteProductIds": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "displayName", "email", "photoUrl", "points",
+        "totalVerifiedSpending", "membershipTier", "role", "favoriteProductIds",
+        "createdAt", "updatedAt"
+      ]
+    },
+    "PointsEntry": {
+      "title": "PointsEntry",
+      "description": "Immutable loyalty points ledger entry awarded upon verified order completion.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "orderId": { "type": "string" },
+        "pointsDelta": { "type": "integer" },
+        "amountBdt": { "type": "integer" },
+        "reason": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "orderId", "pointsDelta", "amountBdt", "reason", "createdAt"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "User in-app notification for order status updates, offers, or announcements.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["ORDER", "OFFER", "ANNOUNCEMENT"] },
+        "relatedOrderId": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "type", "relatedOrderId", "read", "createdAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer top-up or subscription order with bKash payment verification workflow.",
+      "type": "object",
+      "properties": {
+        "orderCode": { "type": "string" },
+        "userId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "gameId": { "type": "string" },
+        "gameName": { "type": "string" },
+        "categoryName": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "quantityLabel": { "type": "string" },
+        "unitPriceBdt": { "type": "integer" },
+        "totalAmountBdt": { "type": "integer" },
+        "targetAccountLabel": { "type": "string" },
+        "targetAccountInput": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "paymentRecipientNumber": { "type": "string" },
+        "paymentSenderNumber": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "paymentConfirmed": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["PENDING", "PAYMENT_VERIFICATION", "PROCESSING", "COMPLETED", "REJECTED"] },
+        "adminNote": { "type": "string" },
+        "pointsAwarded": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "orderCode", "userId", "customerName", "customerEmail", "gameId", "gameName",
+        "categoryName", "productId", "productName", "quantityLabel", "unitPriceBdt",
+        "totalAmountBdt", "targetAccountLabel", "targetAccountInput", "paymentMethod",
+        "paymentRecipientNumber", "paymentSenderNumber", "transactionId", "paymentConfirmed",
+        "status", "adminNote", "pointsAwarded", "createdAt", "updatedAt"
+      ]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Server-managed admin registry keyed by UID.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" }
+      }
+    },
+    "OwnerOrderMessage": {
+      "title": "OwnerOrderMessage",
+      "description": "Direct owner inbox notification generated atomically when any customer places an order.",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "orderCode": { "type": "string" },
+        "customerUid": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "gameName": { "type": "string" },
+        "productName": { "type": "string" },
+        "totalAmountBdt": { "type": "integer" },
+        "targetAccountLabel": { "type": "string" },
+        "targetAccountInput": { "type": "string" },
+        "paymentMethod": { "type": "string", "enum": ["bKash", "Nagad"] },
+        "paymentSenderNumber": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "orderId", "orderCode", "customerUid", "customerName", "customerEmail",
+        "gameName", "productName", "totalAmountBdt", "targetAccountLabel",
+        "targetAccountInput", "paymentSenderNumber", "transactionId", "read", "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/app_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/StoreConfig" },
+      "description": "Global store settings document (store_config)."
+    },
+    "/games/{gameId}": {
+      "schema": { "$ref": "#/entities/Game" },
+      "description": "Available digital games and services."
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "Categories belonging to games."
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Top-up packages and subscription items."
+    },
+    "/bonus_offers/{offerId}": {
+      "schema": { "$ref": "#/entities/BonusOffer" },
+      "description": "Exclusive bonus drop offers."
+    },
+    "/faqs/{faqId}": {
+      "schema": { "$ref": "#/entities/FaqItem" },
+      "description": "Customer support FAQs."
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Storewide announcements."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Customer profiles, loyalty points, and membership."
+    },
+    "/users/{userId}/points_history/{entryId}": {
+      "schema": { "$ref": "#/entities/PointsEntry" },
+      "description": "Loyalty points history subcollection."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AppNotification" },
+      "description": "In-app user notifications."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Customer orders and bKash verification state."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Trusted admin UID registry."
+    },
+    "/owner_order_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/OwnerOrderMessage" },
+      "description": "Owner-only real-time inbox of incoming customer order alerts."
+    }
+  }
+}

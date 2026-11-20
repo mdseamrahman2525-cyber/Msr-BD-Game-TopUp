@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">MSR BD Game Top-Up</string>
+    <string name="cd_official_logo">MSR BD Game Top-Up Official Logo</string>
+    <string name="cd_global_header">MSR BD Game Top-Up Official Banner</string>
+    <string name="cd_scrolling_bg">Gaming Store Background Artwork</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_products">Products</string>
+    <string name="nav_orders">Orders</string>
+    <string name="nav_support">Support</string>
+    <string name="nav_account">My Account</string>
+</resources>
